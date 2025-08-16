@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>교실 자리 배치</title>
+    <style>
+      :root {
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #2563eb;
+        --accent-2: #0ea5e9;
+        --danger: #ef4444;
+        --border: #e2e8f0;
+        --seat: #f1f5f9;
+        --seat-hover: #e2e8f0;
+        --seat-special: #fff1c2;
+        --seat-special-border: #f59e0b;
+        --seat-excluded: #cbd5e1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial,
+          sans-serif;
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 18px;
+        height: 100vh;
+        padding: 18px;
+      }
+      /* ===== Main (교실) ===== */
+      .stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        overflow: auto;
+        padding: 12px;
+      }
+      .board {
+        width: min(1100px, 95%);
+        background: #111827;
+        color: #fff;
+        border-radius: 14px;
+        padding: 14px 18px;
+        text-align: center;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      }
+      .armies {
+        display: flex;
+        gap: 64px; /* 군단 간 한 칸 띄움 느낌 */
+        justify-content: center;
+        align-items: flex-start;
+        padding: 12px;
+        width: 100%;
+      }
+      .battalion {
+        display: grid;
+        grid-template-columns: repeat(2, 140px); /* 2열 */
+        grid-template-rows: repeat(5, 140px); /* 5행 */
+        gap: 18px;
+      }
+      .seat {
+        background: var(--seat);
+        border: 2px solid var(--border);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px; /* 가운데 크게 */
+        font-weight: 800;
+        user-select: none;
+        cursor: pointer;
+        transition: 0.15s ease;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+      .seat:hover {
+        background: var(--seat-hover);
+      }
+      .seat.excluded {
+        background: var(--seat-excluded);
+        border-style: dashed;
+        color: #475569;
+        cursor: not-allowed;
+      }
+      .seat.special-select {
+        outline: 3px solid var(--seat-special-border);
+        background: #fff8e1;
+      }
+      .seat.special-assigned {
+        background: var(--seat-special);
+        border-color: var(--seat-special-border);
+      }
+
+      /* ===== Sidebar ===== */
+      .sidebar {
+        height: 100%;
+        overflow: auto;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .title {
+        font-size: 18px;
+        font-weight: 800;
+        margin: 0;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 0;
+      }
+      .section {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #fff;
+      }
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      textarea,
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .btn {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.15s ease;
+        text-align: center;
+      }
+      .btn:hover {
+        background: #1d4ed8;
+      }
+      .btn.light {
+        background: #fff;
+        color: var(--accent);
+      }
+      .btn.danger {
+        background: var(--danger);
+        border-color: var(--danger);
+      }
+      .list {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        max-height: 180px;
+        overflow: auto;
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .modebar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .badge {
+        font-size: 12px;
+        color: #1e293b;
+        background: #e2e8f0;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ===== MAIN ===== -->
+      <main class="stage">
+        <div class="board">칠판 (앞)</div>
+        <div class="armies" id="armies"></div>
+        <div class="muted">
+          팁: 자리를 클릭하면 <b>제외</b> / 다시 클릭하면 복원됩니다. “특수 자리
+          선택” 모드에서 자리를 클릭하면 특수 자리로 지정됩니다.
+        </div>
+      </main>
+
+      <!-- ===== SIDEBAR ===== -->
+      <aside class="sidebar">
+        <h2 class="title">자리 배치 도구</h2>
+        <p class="muted">2열 × 4행 × 3군단 / 군단 간 간격 적용</p>
+
+        <!-- 모드 전환 -->
+        <div class="section">
+          <label>자리 선택 모드</label>
+          <div class="modebar">
+            <button class="btn light" id="mode-normal">일반 선택</button>
+            <button class="btn light" id="mode-special">특수 자리 선택</button>
+            <button class="btn light" id="clear-special">특수 선택 해제</button>
+            <button class="btn light" id="mode-exclude">자리 제외</button>
+            <button class="btn light" id="clear-excluded">
+              모든 제외 해제
+            </button>
+          </div>
+          <div>
+            <span class="badge" id="mode-indicator">현재 모드: 일반</span>
+          </div>
+        </div>
+
+        <!-- 공통 입력 UI (일반 후보) -->
+        <div class="section">
+          <strong>이름/번호 목록 또는 번호 범위</strong>
+          <p class="muted">
+            아래 입력칸은 <b>줄바꿈으로 목록 입력</b> 또는
+            <b>범위(최소/최대)</b> 추가가 동일하게 동작합니다.
+          </p>
+          <label>이름/번호 (줄바꿈으로 추가)</label>
+          <textarea
+            id="pool-text"
+            rows="5"
+            placeholder="예시&#10;영희&#10;철수&#10;민수&#10;"
+            spellcheck="false"
+          ></textarea>
+          <div class="row">
+            <div>
+              <label>최소 항목</label
+              ><input type="number" id="pool-min" placeholder="예: 1" />
+            </div>
+            <div>
+              <label>최대 항목</label
+              ><input type="number" id="pool-max" placeholder="예: 23" />
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="btn" id="pool-add-text">목록 추가</button>
+            <button class="btn" id="pool-add-range">범위 추가</button>
+            <button class="btn light" id="pool-clear">목록 초기화</button>
+          </div>
+          <div class="toolbar">
+            <button class="btn light" id="pool-all">전체 선택</button>
+            <button class="btn light" id="pool-none">전체 해제</button>
+            <button class="btn light" id="pool-invert">선택 반전</button>
+          </div>
+          <div class="list" id="pool-list"></div>
+        </div>
+
+        <!-- 공통 입력 UI (특수 후보) -->
+        <div class="section">
+          <strong>특수 자리 이름/번호 목록 또는 번호 범위</strong>
+          <p class="muted">
+            위와 동일한 방식으로 입력/선택합니다. <b>특수로 선택된 자리</b>에만
+            먼저 배치됩니다.
+          </p>
+          <label>이름/번호 (줄바꿈으로 추가)</label>
+          <textarea
+            id="sp-text"
+            rows="5"
+            placeholder="예시&#10;영희&#10;철수&#10;민수&#10;"
+            spellcheck="false"
+          ></textarea>
+          <div class="row">
+            <div>
+              <label>최소 항목</label
+              ><input type="number" id="sp-min" placeholder="예: 1" />
+            </div>
+            <div>
+              <label>최대 항목</label
+              ><input type="number" id="sp-max" placeholder="예: 8" />
+            </div>
+          </div>
+          <div class="toolbar">
+            <button class="btn" id="sp-add-text">목록 추가</button>
+            <button class="btn" id="sp-add-range">범위 추가</button>
+            <button class="btn light" id="sp-clear">목록 초기화</button>
+          </div>
+          <div class="toolbar">
+            <button class="btn light" id="sp-all">전체 선택</button>
+            <button class="btn light" id="sp-none">전체 해제</button>
+            <button class="btn light" id="sp-invert">선택 반전</button>
+          </div>
+          <div class="list" id="sp-list"></div>
+        </div>
+
+        <!-- 실행 -->
+        <div class="section">
+          <button class="btn" id="run">랜덤 배치</button>
+          <button class="btn danger" id="reset-seats">자리 내용 지우기</button>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      /* =========================
+       상태 및 유틸
+    ==========================*/
+      const armiesEl = document.getElementById("armies");
+
+      const MODE = {
+        NORMAL: "일반",
+        EXCLUDE: "자리 제외",
+        SPECIAL: "특수 선택",
+      };
+      let currentMode = MODE.NORMAL;
+
+      // 자리 노드 배열
+      let seats = []; // [{el, excluded:boolean, special:boolean}...]
+
+      // 리스트 데이터
+      let poolItems = []; // 일반 후보(고유)
+      let poolSelected = new Set(); // 선택된 항목
+      let spItems = []; // 특수 후보(고유)
+      let spSelected = new Set();
+
+      const poolUI = {
+        text: document.getElementById("pool-text"),
+        min: document.getElementById("pool-min"),
+        max: document.getElementById("pool-max"),
+        addText: document.getElementById("pool-add-text"),
+        addRange: document.getElementById("pool-add-range"),
+        clear: document.getElementById("pool-clear"),
+        list: document.getElementById("pool-list"),
+        all: document.getElementById("pool-all"),
+        none: document.getElementById("pool-none"),
+        invert: document.getElementById("pool-invert"),
+      };
+
+      const spUI = {
+        text: document.getElementById("sp-text"),
+        min: document.getElementById("sp-min"),
+        max: document.getElementById("sp-max"),
+        addText: document.getElementById("sp-add-text"),
+        addRange: document.getElementById("sp-add-range"),
+        clear: document.getElementById("sp-clear"),
+        list: document.getElementById("sp-list"),
+        all: document.getElementById("sp-all"),
+        none: document.getElementById("sp-none"),
+        invert: document.getElementById("sp-invert"),
+      };
+
+      const modeIndicator = document.getElementById("mode-indicator");
+
+      /* =========================
+       자리 생성 (2×4) × 3군단
+    ==========================*/
+      function buildSeats() {
+        armiesEl.innerHTML = "";
+        seats = [];
+        for (let b = 0; b < 3; b++) {
+          const battalion = document.createElement("div");
+          battalion.className = "battalion";
+          for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 2; c++) {
+              const el = document.createElement("div");
+              el.className = "seat";
+              el.dataset.b = b;
+              el.dataset.r = r;
+              el.dataset.c = c;
+              el.addEventListener("click", () => onSeatClick(el));
+              battalion.appendChild(el);
+              seats.push({ el, excluded: false, special: false });
+            }
+          }
+          armiesEl.appendChild(battalion);
+        }
+      }
+
+      function onSeatClick(el) {
+        const seat = seats.find((s) => s.el === el);
+        if (!seat) return;
+
+        if (currentMode === MODE.EXCLUDE) {
+          seat.excluded = !seat.excluded;
+          renderSeatStyle(seat);
+        } else if (currentMode === MODE.SPECIAL) {
+          if (seat.excluded) return; // 제외 자리는 특수 지정 불가
+          seat.special = !seat.special;
+          renderSeatStyle(seat);
+        } else {
+          // 일반 모드: 아무 동작 없음 (확장 여지)
+        }
+      }
+
+      function renderSeatStyle(seat) {
+        const { el, excluded, special } = seat;
+        el.classList.toggle("excluded", excluded);
+        el.classList.toggle("special-select", special && !el.textContent);
+        el.classList.toggle("special-assigned", special && !!el.textContent);
+        if (excluded) {
+          el.textContent = ""; // 제외 표시는 색으로만
+          el.classList.remove("special-select", "special-assigned");
+        }
+        if (!special) {
+          el.classList.remove("special-select", "special-assigned");
+        }
+      }
+
+      /* =========================
+       입력 공통 로직
+    ==========================*/
+      function addTextToList(targetItems, targetSelected, textarea) {
+        const lines = textarea.value
+          .split("\n")
+          .map((v) => v.trim())
+          .filter(Boolean);
+        lines.forEach((v) => targetSelected.add(v));
+        // 고유 목록 갱신
+        const set = new Set(targetItems.concat(lines));
+        targetItems.length = 0;
+        targetItems.push(...Array.from(set));
+        textarea.value = "";
+      }
+
+      function addRangeToList(targetItems, targetSelected, minEl, maxEl, type) {
+        const min = parseInt(minEl.value, 10);
+        const max = parseInt(maxEl.value, 10);
+        if (Number.isFinite(min) && Number.isFinite(max) && max >= min) {
+          let range = [];
+          for (let i = min; i <= max; i++) {
+            range.push(String(i));
+          }
+          if (type === "special") {
+            const specialSeatsCount = seats.filter(
+              (s) => s.special && !s.excluded
+            ).length;
+            // 이름이 포함된 숫자 항목 추출 (예: "김지호 3" → 3)
+            const namedNumbers = Array.from(targetItems)
+              .map((v) => {
+                const parts = v.trim().split(" ");
+                return parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])
+                  ? parts[parts.length - 1]
+                  : null;
+              })
+              .filter(Boolean);
+            // 범위에서 이름이 포함된 숫자 제외
+            range = range.filter((num) => !namedNumbers.includes(num));
+            if (range.length > specialSeatsCount) {
+              alert(`특수 자리 개수(${specialSeatsCount})를 초과했습니다.`);
+              return;
+            }
+          }
+          if (type === "normal") {
+            const totalSeatsCount = seats.filter((s) => !s.excluded).length;
+            // 특수 후보에서 마지막이 숫자인 항목 추출
+            const specialNumbers = Array.from(spSelected)
+              .map((v) => {
+                const parts = v.trim().split(" ");
+                const last = parts[parts.length - 1];
+                return /^\d+$/.test(last) ? last : null;
+              })
+              .filter(Boolean);
+            range = range.filter((num) => !specialNumbers.includes(num));
+            if (range.length > totalSeatsCount) {
+              alert(`전체 자리 개수(${totalSeatsCount})를 초과했습니다.`);
+              return;
+            }
+          }
+          range.forEach((v) => targetSelected.add(v));
+          const set = new Set(targetItems.concat(range));
+          targetItems.length = 0;
+          targetItems.push(...Array.from(set));
+          minEl.value = "";
+          maxEl.value = "";
+        }
+      }
+
+      function renderList(container, items, selectedSet) {
+        container.innerHTML = "";
+        items.forEach((v) => {
+          const row = document.createElement("label");
+          row.className = "item";
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = selectedSet.has(v);
+          cb.addEventListener("change", () => {
+            cb.checked ? selectedSet.add(v) : selectedSet.delete(v);
+          });
+          const span = document.createElement("span");
+          span.textContent = v;
+          row.appendChild(cb);
+          row.appendChild(span);
+          container.appendChild(row);
+        });
+      }
+
+      function listControlsAll(select, items, set, container) {
+        if (select) items.forEach((v) => set.add(v));
+        else set.clear();
+        renderList(container, items, set);
+      }
+      function listControlsInvert(items, set, container) {
+        items.forEach((v) => {
+          if (set.has(v)) set.delete(v);
+          else set.add(v);
+        });
+        renderList(container, items, set);
+      }
+
+      /* =========================
+       모드 버튼
+    ==========================*/
+      document.getElementById("mode-normal").onclick = () => {
+        currentMode = MODE.NORMAL;
+        modeIndicator.textContent = "현재 모드: 일반";
+      };
+      document.getElementById("mode-exclude").onclick = () => {
+        currentMode = MODE.EXCLUDE;
+        modeIndicator.textContent = "현재 모드: 자리 제외";
+      };
+      document.getElementById("mode-special").onclick = () => {
+        currentMode = MODE.SPECIAL;
+        modeIndicator.textContent = "현재 모드: 특수 선택";
+      };
+      document.getElementById("clear-special").onclick = () => {
+        seats.forEach((s) => {
+          s.special = false;
+          renderSeatStyle(s);
+        });
+      };
+      document.getElementById("clear-excluded").onclick = () => {
+        seats.forEach((s) => {
+          s.excluded = false;
+          renderSeatStyle(s);
+        });
+      };
+
+      /* =========================
+       리스트 버튼 연결
+    ==========================*/
+      // 일반 후보
+      poolUI.addText.onclick = () => {
+        addTextToList(poolItems, poolSelected, poolUI.text);
+        renderList(poolUI.list, poolItems, poolSelected);
+      };
+      poolUI.addRange.onclick = () => {
+        addRangeToList(
+          poolItems,
+          poolSelected,
+          poolUI.min,
+          poolUI.max,
+          "normal"
+        );
+        renderList(poolUI.list, poolItems, poolSelected);
+      };
+      poolUI.clear.onclick = () => {
+        poolItems.length = 0;
+        poolSelected.clear();
+        renderList(poolUI.list, poolItems, poolSelected);
+      };
+      poolUI.all.onclick = () => {
+        listControlsAll(true, poolItems, poolSelected, poolUI.list);
+      };
+      poolUI.none.onclick = () => {
+        listControlsAll(false, poolItems, poolSelected, poolUI.list);
+      };
+      poolUI.invert.onclick = () => {
+        listControlsInvert(poolItems, poolSelected, poolUI.list);
+      };
+
+      // 특수 후보
+      spUI.addText.onclick = () => {
+        addTextToList(spItems, spSelected, spUI.text);
+        renderList(spUI.list, spItems, spSelected);
+      };
+      spUI.addRange.onclick = () => {
+        addRangeToList(spItems, spSelected, spUI.min, spUI.max, "special");
+        renderList(spUI.list, spItems, spSelected);
+      };
+      spUI.clear.onclick = () => {
+        spItems.length = 0;
+        spSelected.clear();
+        renderList(spUI.list, spItems, spSelected);
+      };
+      spUI.all.onclick = () => {
+        listControlsAll(true, spItems, spSelected, spUI.list);
+      };
+      spUI.none.onclick = () => {
+        listControlsAll(false, spItems, spSelected, spUI.list);
+      };
+      spUI.invert.onclick = () => {
+        listControlsInvert(spItems, spSelected, spUI.list);
+      };
+
+      /* =========================
+       배치 로직
+    ==========================*/
+      document.getElementById("run").onclick = runAssignment;
+      document.getElementById("reset-seats").onclick = () => {
+        seats.forEach((s) => {
+          s.el.textContent = "";
+          s.el.classList.remove("special-assigned");
+          if (!s.special) s.el.classList.remove("special-select");
+        });
+      };
+
+      function runAssignment() {
+        // 1) 자리 준비
+        const availableSpecialSeats = seats.filter(
+          (s) => s.special && !s.excluded
+        );
+        const availableNormalSeats = seats.filter(
+          (s) => !s.special && !s.excluded
+        );
+
+        // 모든 자리 텍스트 초기화(스타일 유지)
+        seats.forEach((s) => {
+          s.el.textContent = "";
+          s.el.classList.toggle("special-assigned", false);
+          s.el.classList.toggle("special-select", s.special);
+        });
+
+        // 2) 후보 풀 구성
+        const pool = Array.from(poolSelected); // 일반 전체 후보(선택된 항목)
+        const spPoolAll = Array.from(spSelected); // 특수 전체 후보(선택된 항목)
+
+        // 이름이 포함된 숫자 추출 (예: "김지호 3" → 3)
+        const namedNumbers = spPoolAll
+          .map((v) => {
+            const parts = v.trim().split(" ");
+            return parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])
+              ? parts[parts.length - 1]
+              : null;
+          })
+          .filter(Boolean);
+
+        // 특수 자리 배치 시, 단독 숫자 중 namedNumbers와 중복되는 것 제외
+        const filteredSpecialPool = spPoolAll.filter((v) => {
+          if (/^\d+$/.test(v.trim())) {
+            // 단독 숫자인 경우, 이름이 포함된 숫자와 중복되면 제외
+            return !namedNumbers.includes(v.trim());
+          }
+          return true;
+        });
+
+        // 3) 특수 자리 배치: filteredSpecialPool 내에서만 랜덤
+        const specialPool = shuffle([...filteredSpecialPool]);
+        const usedInSpecial = [];
+        for (
+          let i = 0;
+          i < availableSpecialSeats.length && i < specialPool.length;
+          i++
+        ) {
+          const seat = availableSpecialSeats[i];
+          const name = specialPool[i];
+          seat.el.textContent = name;
+          seat.el.classList.add("special-assigned");
+          usedInSpecial.push(name);
+        }
+
+        // 4) 일반 자리 배치:
+        //   - 특수 자리 후보에서 추출한 숫자(namedNumbers)는 일반 배치에서 제외
+        //   - 이미 특수에 배치된 항목도 제외
+        const generalCandidates = pool.filter(
+          (v) =>
+            !spPoolAll.includes(v) &&
+            !usedInSpecial.includes(v) &&
+            !namedNumbers.includes(v)
+        );
+        const generalPool = shuffle([...generalCandidates]);
+
+        for (
+          let i = 0;
+          i < availableNormalSeats.length && i < generalPool.length;
+          i++
+        ) {
+          const seat = availableNormalSeats[i];
+          const name = generalPool[i];
+          seat.el.textContent = name;
+        }
+        // 나머지 자리는 공란으로 둠
+      }
+
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      /* =========================
+       초기 구동
+    ==========================*/
+      buildSeats();
+      renderList(poolUI.list, poolItems, poolSelected);
+      renderList(spUI.list, spItems, spSelected);
+    </script>
+  </body>
+</html>
