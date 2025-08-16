@@ -62,13 +62,13 @@
       }
       .armies {
         display: flex;
-        gap: 64px; /* 군단 간 한 칸 띄움 느낌 */
+        gap: 64px; /* 그룹 간 한 칸 띄움 느낌 */
         justify-content: center;
         align-items: flex-start;
         padding: 12px;
         width: 100%;
       }
-      .battalion {
+      .group {
         display: grid;
         gap: 28px;
       }
@@ -79,10 +79,12 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 38px; /* 가운데 크게 */
+        font-size: 38px;
         font-weight: 800;
         padding: 0;
-        min-height: 120px;
+        /* min-height 제거하고 정사각 비율 사용 */
+        width: 100%;
+        aspect-ratio: 1 / 1; /* 가로세로 비율 1:1 */
         user-select: none;
         cursor: pointer;
         transition: 0.15s ease;
@@ -230,11 +232,14 @@
           padding: 10px;
         }
         .stage {
-          padding: 6px;
-          width: 100vw;
-          max-width: 100vw;
-          overflow-x: auto; /* 가로 스크롤 허용 */
-          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          overflow: auto;
+          padding: 12px;
+          max-height: 100%;
+          max-width: 100%;
         }
         .armies {
           gap: 16px;
@@ -245,10 +250,9 @@
           box-sizing: border-box;
           margin-left: 0;
         }
-        .battalion {
-          grid-template-columns: repeat(2, 90px);
-          grid-template-rows: repeat(4, 90px);
-          gap: 10px;
+        .group {
+          display: grid;
+          gap: 16px;
         }
         .seat {
           font-size: 18px;
@@ -273,11 +277,14 @@
           padding: 10px;
         }
         .stage {
-          padding: 6px;
-          width: 100vw;
-          max-width: 100vw;
-          overflow-x: auto;
-          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          overflow: auto;
+          padding: 12px;
+          max-height: 100%;
+          max-width: 100%;
         }
         .armies {
           gap: 16px;
@@ -288,10 +295,9 @@
           box-sizing: border-box;
           margin-left: 0;
         }
-        .battalion {
-          grid-template-columns: repeat(2, 120px); /* 좌석 너비 증가 */
-          grid-template-rows: repeat(4, 120px); /* 좌석 높이 증가 */
-          gap: 16px;
+        .group {
+          display: grid;
+          gap: 10px;
         }
         .seat {
           font-size: 28px; /* 글씨 크기 증가 */
@@ -359,7 +365,7 @@
       <!-- ===== SIDEBAR ===== -->
       <aside class="sidebar">
         <!-- 언어 선택 추가 -->
-        <div class="section">
+        <div class="section" id="lang-section">
           <label for="lang-select">언어(Language)</label>
           <select id="lang-select">
             <option value="ko">한국어</option>
@@ -368,11 +374,12 @@
         </div>
 
         <h2 class="title">좌석 배치 도구</h2>
+        <p class="muted" id="section-desc"></p>
 
         <!-- 모드 전환 -->
         <div class="section">
-          <label>좌석 선택 모드</label>
-          <div class="modebar">
+          <strong>좌석 선택 모드</strong>
+          <div class="section" id="mode-section">
             <button class="btn light" id="mode-normal">일반 선택</button>
             <button class="btn light" id="mode-special">특수 좌석 선택</button>
             <button class="btn light" id="clear-special">특수 선택 해제</button>
@@ -389,17 +396,17 @@
         <!-- 좌석 배치 설정 -->
         <div class="section">
           <strong>좌석 배치 설정</strong>
-          <div class="row">
+          <div class="section" id="structure-section">
             <div>
-              <label>열</label>
+              <label>행</label>
               <input type="number" id="col-count" value="2" min="1" />
             </div>
             <div>
-              <label>행</label>
+              <label>열</label>
               <input type="number" id="row-count" value="4" min="1" />
             </div>
             <div>
-              <label>군단</label>
+              <label>그룹</label>
               <input type="number" id="army-count" value="3" min="1" />
             </div>
           </div>
@@ -420,7 +427,7 @@
             placeholder="예:&#10;영희&#10;철수&#10;민수&#10;"
             spellcheck="false"
           ></textarea>
-          <div class="row">
+          <div class="section" id="pool-section">
             <div>
               <label>최소 항목</label
               ><input type="number" id="pool-min" placeholder="예: 1" />
@@ -457,7 +464,7 @@
             placeholder="예:&#10;영희&#10;철수&#10;민수&#10;"
             spellcheck="false"
           ></textarea>
-          <div class="row">
+          <div class="section" id="sp-section">
             <div>
               <label>최소 항목</label
               ><input type="number" id="sp-min" placeholder="예: 1" />
@@ -480,8 +487,8 @@
           <div class="list" id="sp-list"></div>
         </div>
 
-        <!-- 실행 -->
-        <div class="section">
+        <!-- 실열 -->
+        <div class="section" id="run-section">
           <button class="btn" id="run">랜덤 배치</button>
           <button class="btn danger" id="reset-seats">좌석 내용 지우기</button>
         </div>
@@ -501,7 +508,7 @@
       };
       let currentMode = MODE.NORMAL;
 
-      // 좌석 노드 배열
+      // 좌석 노드 배행
       let seats = []; // [{el, excluded:boolean, special:boolean}...]
 
       // 리스트 데이터
@@ -572,7 +579,7 @@
           run: "랜덤 배치",
           reset_seats: "좌석 내용 지우기",
           section_title: "좌석 배치 도구",
-          section_desc: "2열 × 4행 × 3군단 / 군단 간 간격 적용",
+          section_desc: "2행 × 4열 × 3그룹 / 그룹 간 간격 적용",
           pool_strong: "이름/번호 목록 또는 번호 범위",
           pool_muted:
             "아래 입력칸은 <b>줄바꿈으로 목록 입력</b> 또는 <b>범위(최소/최대)</b> 추가가 동일하게 동작합니다.",
@@ -626,13 +633,50 @@
       };
 
       function buildSeatsDynamic(cols = 2, rows = 4, armies = 3) {
+        // 1) 이전 상태 보존 (dataset b-r-c 키 기준)
+        const prevStates = new Map();
+        seats.forEach((s) => {
+          const b = s.el.dataset.b;
+          const r = s.el.dataset.r;
+          const c = s.el.dataset.c;
+          prevStates.set(`${b}-${r}-${c}`, {
+            excluded: !!s.excluded,
+            special: !!s.special,
+            text: s.el.textContent || "",
+          });
+        });
+
+        // 2) 비우기
         armiesEl.innerHTML = "";
         seats = [];
+
+        // 3) 화면 너비와 그룹 수에 따라 좌석 크기 계산 (반응형)
+        const screenWidth = window.innerWidth;
+        // padding / 여백을 고려한 대략적인 사용 가능한 너비
+        const containerPadding = 36; // .app 패딩 + 여유
+        const armiesGap = parseInt(getComputedStyle(armiesEl).gap) || 16;
+        const availableForGroups = Math.max(
+          200,
+          screenWidth - containerPadding
+        );
+        const perGroupWidth = Math.floor(
+          (availableForGroups - armiesGap * (armies - 1)) / armies
+        );
+
+        const gapBetweenSeats = 28; // .group gap (CSS와 동일하게)
+        let seatSize = Math.floor(
+          (perGroupWidth - gapBetweenSeats * (cols - 1)) / cols
+        );
+        // 제한값: 너무 크면 180 (원래값), 너무 작으면 48
+        seatSize = Math.max(48, Math.min(180, seatSize));
+
+        // 4) 그룹/좌석 생성 (이전 상태 복원)
         for (let b = 0; b < armies; b++) {
-          const battalion = document.createElement("div");
-          battalion.className = "battalion";
-          battalion.style.gridTemplateColumns = `repeat(${cols}, 180px)`;
-          battalion.style.gridTemplateRows = `repeat(${rows}, 180px)`;
+          const group = document.createElement("div");
+          group.className = "group";
+          // 그리드에서 각 열의 너비를 픽셀로 고정 (반응형으로 계산한 값)
+          group.style.gridTemplateColumns = `repeat(${cols}, ${seatSize}px)`;
+          group.style.gridTemplateRows = `repeat(${rows}, ${seatSize}px)`;
 
           for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -641,12 +685,26 @@
               el.dataset.b = b;
               el.dataset.r = r;
               el.dataset.c = c;
+
+              // 이전 상태 복원
+              const key = `${b}-${r}-${c}`;
+              const prev = prevStates.get(key);
+              const seatObj = {
+                el,
+                excluded: !!(prev && prev.excluded),
+                special: !!(prev && prev.special),
+              };
+              if (prev && prev.text) {
+                el.textContent = prev.text;
+              }
+
               el.addEventListener("click", () => onSeatClick(el));
-              battalion.appendChild(el);
-              seats.push({ el, excluded: false, special: false });
+              group.appendChild(el);
+              renderSeatStyle(seatObj); // 클래스/텍스트 초기화
+              seats.push(seatObj);
             }
           }
-          armiesEl.appendChild(battalion);
+          armiesEl.appendChild(group);
         }
       }
 
@@ -977,17 +1035,16 @@
       /* =========================
        초기 구동
     ==========================*/
-      buildSeats();
       renderList(poolUI.list, poolItems, poolSelected);
       renderList(spUI.list, spItems, spSelected);
 
       function setLanguage(lang) {
-        const t = UI_TEXT[lang];
+        const t = UI_TEXT[lang] || UI_TEXT["ko"];
 
         // 사이드바 타이틀 및 설명
         document.querySelector(".title").textContent = t.section_title;
-        document.querySelectorAll(".sidebar .muted")[0].innerHTML =
-          t.section_desc;
+        document.getElementById("section-desc").innerHTML = t.section_desc;
+        t.section_desc;
 
         // 메인 안내문구(팁)
         document.querySelector(".stage .muted").innerHTML = t.tip;
@@ -1006,57 +1063,78 @@
         document.getElementById("clear-excluded").textContent =
           t.clear_excluded;
 
+        // 모드 레이블 (mode-section 안의 첫 label을 id 대신 직접 찾음)
+        const modeSection = document.getElementById("mode-section");
+        if (modeSection) {
+          const lbl = modeSection.querySelector("label");
+          if (lbl) lbl.textContent = t.mode_label;
+        }
+
         // 일반 후보
-        const poolSection = document.querySelectorAll(".section")[2];
-        poolSection.querySelector("strong").textContent = t.pool_strong;
-        poolSection.querySelector("p.muted").innerHTML = t.pool_muted;
-        poolSection.querySelectorAll("label")[0].textContent = t.pool_label;
-        poolUI.text.placeholder = t.pool_placeholder;
-        poolSection.querySelectorAll("label")[1].textContent = t.pool_min;
-        poolSection.querySelectorAll("label")[2].textContent = t.pool_max;
-        document.getElementById("pool-min").placeholder =
-          lang === "ko" ? "예: 1" : "Ex: 1";
-        document.getElementById("pool-max").placeholder =
-          lang === "ko" ? "예: 23" : "Ex: 23";
-        poolUI.addText.textContent = t.pool_add_text;
-        poolUI.addRange.textContent = t.pool_add_range;
-        poolUI.clear.textContent = t.pool_clear;
-        poolUI.all.textContent = t.pool_all;
-        poolUI.none.textContent = t.pool_none;
-        poolUI.invert.textContent = t.pool_invert;
+        const poolSection = document.getElementById("pool-section");
+        if (poolSection) {
+          const strong = poolSection.querySelector("strong");
+          if (strong) strong.textContent = t.pool_strong;
+          const pm = poolSection.querySelector("p.muted");
+          if (pm) pm.innerHTML = t.pool_muted;
+          const labels = poolSection.querySelectorAll("label");
+          if (labels.length >= 3) {
+            labels[0].textContent = t.pool_label;
+            labels[1].textContent = t.pool_min;
+            labels[2].textContent = t.pool_max;
+          }
+          poolUI.text.placeholder = t.pool_placeholder;
+          document.getElementById("pool-min").placeholder =
+            lang === "ko" ? "예: 1" : "Ex: 1";
+          document.getElementById("pool-max").placeholder =
+            lang === "ko" ? "예: 23" : "Ex: 23";
+          poolUI.addText.textContent = t.pool_add_text;
+          poolUI.addRange.textContent = t.pool_add_range;
+          poolUI.clear.textContent = t.pool_clear;
+          poolUI.all.textContent = t.pool_all;
+          poolUI.none.textContent = t.pool_none;
+          poolUI.invert.textContent = t.pool_invert;
+        }
 
         // 특수 후보
-        const spSection = document.querySelectorAll(".section")[3];
-        spSection.querySelector("strong").textContent = t.sp_strong;
-        spSection.querySelector("p.muted").innerHTML = t.sp_muted;
-        spSection.querySelectorAll("label")[0].textContent = t.sp_label;
-        spUI.text.placeholder = t.sp_placeholder;
-        spSection.querySelectorAll("label")[1].textContent = t.sp_min;
-        spSection.querySelectorAll("label")[2].textContent = t.sp_max;
-        document.getElementById("sp-min").placeholder =
-          lang === "ko" ? "예: 1" : "Ex: 1";
-        document.getElementById("sp-max").placeholder =
-          lang === "ko" ? "예: 8" : "Ex: 8";
-        spUI.addText.textContent = t.sp_add_text;
-        spUI.addRange.textContent = t.sp_add_range;
-        spUI.clear.textContent = t.sp_clear;
-        spUI.all.textContent = t.sp_all;
-        spUI.none.textContent = t.sp_none;
-        spUI.invert.textContent = t.sp_invert;
+        const spSection = document.getElementById("sp-section");
+        if (spSection) {
+          const strong = spSection.querySelector("strong");
+          if (strong) strong.textContent = t.sp_strong;
+          const pm = spSection.querySelector("p.muted");
+          if (pm) pm.innerHTML = t.sp_muted;
+          const labels = spSection.querySelectorAll("label");
+          if (labels.length >= 3) {
+            labels[0].textContent = t.sp_label;
+            labels[1].textContent = t.sp_min;
+            labels[2].textContent = t.sp_max;
+          }
+          spUI.text.placeholder = t.sp_placeholder;
+          document.getElementById("sp-min").placeholder =
+            lang === "ko" ? "예: 1" : "Ex: 1";
+          document.getElementById("sp-max").placeholder =
+            lang === "ko" ? "예: 8" : "Ex: 8";
+          spUI.addText.textContent = t.sp_add_text;
+          spUI.addRange.textContent = t.sp_add_range;
+          spUI.clear.textContent = t.sp_clear;
+          spUI.all.textContent = t.sp_all;
+          spUI.none.textContent = t.sp_none;
+          spUI.invert.textContent = t.sp_invert;
+        }
 
-        // 실행 버튼
+        // 실열 버튼
         document.getElementById("run").textContent = t.run;
         document.getElementById("reset-seats").textContent = t.reset_seats;
 
         // 언어 선택 라벨
-        document.querySelector('label[for="lang-select"]').textContent =
-          lang === "ko" ? "언어(Language)" : "Language";
-
-        // 모드 라벨 번역 추가
-        document
-          .querySelectorAll(".section")[1]
-          .querySelector("label").textContent = t.mode_label;
+        const langLabel = document.querySelector('label[for="lang-select"]');
+        if (langLabel)
+          langLabel.textContent = lang === "ko" ? "언어(Language)" : "Language";
       }
+      // 모드 라벨 번역 추가
+      document
+        .querySelectorAll(".section")[1]
+        .querySelector("label").textContent = t.mode_label;
 
       document.getElementById("lang-select").onchange = function () {
         setLanguage(this.value);
@@ -1079,6 +1157,20 @@
         );
         buildSeatsDynamic(cols, rows, armies);
       };
+
+      let resizeTimer;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          const cols =
+            parseInt(document.getElementById("col-count").value, 10) || 2;
+          const rows =
+            parseInt(document.getElementById("row-count").value, 10) || 4;
+          const armies =
+            parseInt(document.getElementById("army-count").value, 10) || 3;
+          buildSeatsDynamic(cols, rows, armies);
+        }, 120);
+      });
     </script>
   </body>
 </html>
