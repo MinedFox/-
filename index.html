@@ -46,6 +46,7 @@
         gap: 16px;
         overflow: auto;
         padding: 12px;
+        max-height: 100%;
       }
       .board {
         width: min(1400px, 98%);
@@ -69,8 +70,6 @@
       }
       .battalion {
         display: grid;
-        grid-template-columns: repeat(2, 180px); /* 2열 */
-        grid-template-rows: repeat(4, 180px); /* 4행 */
         gap: 28px;
       }
       .seat {
@@ -387,6 +386,26 @@
           </div>
         </div>
 
+        <!-- 좌석 배치 설정 -->
+        <div class="section">
+          <strong>좌석 배치 설정</strong>
+          <div class="row">
+            <div>
+              <label>열</label>
+              <input type="number" id="col-count" value="2" min="1" />
+            </div>
+            <div>
+              <label>행</label>
+              <input type="number" id="row-count" value="4" min="1" />
+            </div>
+            <div>
+              <label>군단</label>
+              <input type="number" id="army-count" value="3" min="1" />
+            </div>
+          </div>
+          <button class="btn" id="apply-structure">적용</button>
+        </div>
+
         <!-- 공통 입력 UI (일반 후보) -->
         <div class="section">
           <strong>이름/번호 목록 또는 번호 범위</strong>
@@ -398,7 +417,7 @@
           <textarea
             id="pool-text"
             rows="5"
-            placeholder="예시&#10;영희&#10;철수&#10;민수&#10;"
+            placeholder="예:&#10;영희&#10;철수&#10;민수&#10;"
             spellcheck="false"
           ></textarea>
           <div class="row">
@@ -435,7 +454,7 @@
           <textarea
             id="sp-text"
             rows="5"
-            placeholder="예시&#10;영희&#10;철수&#10;민수&#10;"
+            placeholder="예:&#10;영희&#10;철수&#10;민수&#10;"
             spellcheck="false"
           ></textarea>
           <div class="row">
@@ -531,7 +550,7 @@
           clear_excluded: "모든 제외 해제",
           mode_indicator: "현재 모드: 일반",
           pool_label: "이름/번호 (줄바꿈으로 추가)",
-          pool_placeholder: "예시\n영희\n철수\n민수\n",
+          pool_placeholder: "예:\n영희\n철수\n민수\n",
           pool_min: "최소 항목",
           pool_max: "최대 항목",
           pool_add_text: "목록 추가",
@@ -541,7 +560,7 @@
           pool_none: "전체 해제",
           pool_invert: "선택 반전",
           sp_label: "이름/번호 (줄바꿈으로 추가)",
-          sp_placeholder: "예시\n영희\n철수\n민수\n",
+          sp_placeholder: "예:\n영희\n철수\n민수\n",
           sp_min: "최소 항목",
           sp_max: "최대 항목",
           sp_add_text: "목록 추가",
@@ -606,17 +625,17 @@
         },
       };
 
-      /* =========================
-       자리 생성 (2×4) × 3군단
-    ==========================*/
-      function buildSeats() {
+      function buildSeatsDynamic(cols = 2, rows = 4, armies = 3) {
         armiesEl.innerHTML = "";
         seats = [];
-        for (let b = 0; b < 3; b++) {
+        for (let b = 0; b < armies; b++) {
           const battalion = document.createElement("div");
           battalion.className = "battalion";
-          for (let r = 0; r < 4; r++) {
-            for (let c = 0; c < 2; c++) {
+          battalion.style.gridTemplateColumns = `repeat(${cols}, 180px)`;
+          battalion.style.gridTemplateRows = `repeat(${rows}, 180px)`;
+
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
               const el = document.createElement("div");
               el.className = "seat";
               el.dataset.b = b;
@@ -788,6 +807,17 @@
           s.excluded = false;
           renderSeatStyle(s);
         });
+      };
+      document.getElementById("apply-structure").onclick = () => {
+        const cols = parseInt(document.getElementById("col-count").value, 10);
+        const rows = parseInt(document.getElementById("row-count").value, 10);
+        const armies = parseInt(
+          document.getElementById("army-count").value,
+          10
+        );
+        if (cols > 0 && rows > 0 && armies > 0) {
+          buildSeatsDynamic(cols, rows, armies);
+        }
       };
 
       /* =========================
@@ -1038,6 +1068,17 @@
       document.getElementById("pool-max").setAttribute("min", "0");
       document.getElementById("sp-min").setAttribute("min", "0");
       document.getElementById("sp-max").setAttribute("min", "0");
+
+      // 초기 세팅
+      window.onload = () => {
+        const cols = parseInt(document.getElementById("col-count").value, 10);
+        const rows = parseInt(document.getElementById("row-count").value, 10);
+        const armies = parseInt(
+          document.getElementById("army-count").value,
+          10
+        );
+        buildSeatsDynamic(cols, rows, armies);
+      };
     </script>
   </body>
 </html>
