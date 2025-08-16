@@ -5,7 +5,7 @@
     <title>교실 좌석 배치</title>
     <style>
       :root {
-        --bg: #f6f7fb;
+        --bg: #ffffff;
         --card: #ffffff;
         --text: #0f172a;
         --muted: #64748b;
@@ -70,7 +70,7 @@
       .battalion {
         display: grid;
         grid-template-columns: repeat(2, 180px); /* 2열 */
-        grid-template-rows: repeat(5, 180px); /* 5행 */
+        grid-template-rows: repeat(4, 180px); /* 4행 */
         gap: 28px;
       }
       .seat {
@@ -214,6 +214,135 @@
         border-radius: 999px;
         font-weight: 700;
       }
+
+      /* 반응형 모바일 및 태블릿 대응 */
+      @media (max-width: 1200px) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto;
+          height: auto;
+          padding: 8px;
+        }
+        .sidebar {
+          width: 100%;
+          max-width: 100vw;
+          margin-top: 18px;
+          border-radius: 12px;
+          padding: 10px;
+        }
+        .stage {
+          padding: 6px;
+          width: 100vw;
+          max-width: 100vw;
+          overflow-x: auto; /* 가로 스크롤 허용 */
+          box-sizing: border-box;
+        }
+        .armies {
+          gap: 16px;
+          padding: 4px;
+          width: max-content; /* 내부 크기만큼 늘어남 */
+          min-width: 320px;
+          overflow-x: auto; /* 가로 스크롤 허용 */
+          box-sizing: border-box;
+          margin-left: 0;
+        }
+        .battalion {
+          grid-template-columns: repeat(2, 90px);
+          grid-template-rows: repeat(5, 90px);
+          gap: 10px;
+        }
+        .seat {
+          font-size: 18px;
+          min-height: 48px;
+          border-radius: 10px;
+          padding: 0;
+        }
+      }
+
+      @media (max-width: 800px) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto;
+          height: auto;
+          padding: 8px;
+        }
+        .sidebar {
+          width: 100%;
+          max-width: 100vw;
+          margin-top: 18px;
+          border-radius: 12px;
+          padding: 10px;
+        }
+        .stage {
+          padding: 6px;
+          width: 100vw;
+          max-width: 100vw;
+          overflow-x: auto; /* 가로 스크롤 허용 */
+          box-sizing: border-box;
+        }
+        .armies {
+          gap: 16px;
+          padding: 4px;
+          width: max-content; /* 내부 크기만큼 늘어남 */
+          min-width: 320px;
+          overflow-x: auto; /* 가로 스크롤 허용 */
+          box-sizing: border-box;
+          margin-left: 0; /* 왼쪽 여백 제거 */
+        }
+        .battalion {
+          grid-template-columns: repeat(2, 90px);
+          grid-template-rows: repeat(5, 90px);
+          gap: 10px;
+        }
+        .seat {
+          font-size: 18px;
+          min-height: 48px;
+          border-radius: 10px;
+          padding: 0;
+        }
+      }
+
+      /* ===== Dark Mode (어두운 배경 모드) ===== */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --card: #1e293b;
+          --text: #e2e8f0;
+          --muted: #94a3b8;
+          --accent: #3b82f6;
+          --accent-2: #38bdf8;
+          --danger: #f87171;
+          --border: #334155;
+          --seat: #1e293b;
+          --seat-hover: #334155;
+          --seat-special: #fbbf24;
+          --seat-special-border: #f59e0b;
+          --seat-excluded: #475569;
+        }
+        .board {
+          background: #1e293b;
+          color: #fff;
+        }
+        .sidebar {
+          background: #111827;
+          border-color: #334155;
+        }
+        .section {
+          background: #1e293b;
+          border-color: #334155;
+        }
+        .btn {
+          background: #3b82f6;
+          border-color: #2563eb;
+        }
+        .btn:hover {
+          background: #2563eb;
+        }
+        .badge {
+          background: #334155;
+          color: #e2e8f0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -240,7 +369,6 @@
         </div>
 
         <h2 class="title">좌석 배치 도구</h2>
-        <p class="muted">2열 × 4행 × 3군단 / 군단 간 간격 적용</p>
 
         <!-- 모드 전환 -->
         <div class="section">
@@ -467,8 +595,7 @@
           run: "Random Assign",
           reset_seats: "Clear Seat Contents",
           section_title: "Seat Arrangement Tool",
-          section_desc:
-            "2 columns × 4 rows × 3 battalions / battalion gap applied",
+          section_desc: "2 columns × 4 rows × 3 groups / group gap applied",
           pool_strong: "Name/Number List or Number Range",
           pool_muted:
             "Enter <b>list by line break</b> or <b>range (min/max)</b> below. Both work the same.",
@@ -480,7 +607,7 @@
       };
 
       /* =========================
-       좌석 생성 (2×4) × 3군단
+       자리 생성 (2×4) × 3군단
     ==========================*/
       function buildSeats() {
         armiesEl.innerHTML = "";
@@ -562,7 +689,7 @@
             const specialSeatsCount = seats.filter(
               (s) => s.special && !s.excluded
             ).length;
-            // 이름이 포함된 숫자 항목 추출 (예: "김지호 3" → 3)
+            // 이름이 포함된 숫자 항목 추출 (예: "홀길동 3" → 3)
             const namedNumbers = Array.from(targetItems)
               .map((v) => {
                 const parts = v.trim().split(" ");
@@ -752,7 +879,7 @@
         const pool = Array.from(poolSelected); // 일반 전체 후보(선택된 항목)
         const spPoolAll = Array.from(spSelected); // 특수 전체 후보(선택된 항목)
 
-        // 이름이 포함된 숫자 추출 (예: "김지호 3" → 3)
+        // 이름이 포함된 숫자 추출 (예: "홍길동 3" → 3)
         const namedNumbers = spPoolAll
           .map((v) => {
             const parts = v.trim().split(" ");
@@ -857,8 +984,10 @@
         poolUI.text.placeholder = t.pool_placeholder;
         poolSection.querySelectorAll("label")[1].textContent = t.pool_min;
         poolSection.querySelectorAll("label")[2].textContent = t.pool_max;
-        document.getElementById("pool-min").placeholder = t.pool_min;
-        document.getElementById("pool-max").placeholder = t.pool_max;
+        document.getElementById("pool-min").placeholder =
+          lang === "ko" ? "예: 1" : "Ex: 1";
+        document.getElementById("pool-max").placeholder =
+          lang === "ko" ? "예: 23" : "Ex: 23";
         poolUI.addText.textContent = t.pool_add_text;
         poolUI.addRange.textContent = t.pool_add_range;
         poolUI.clear.textContent = t.pool_clear;
@@ -874,8 +1003,10 @@
         spUI.text.placeholder = t.sp_placeholder;
         spSection.querySelectorAll("label")[1].textContent = t.sp_min;
         spSection.querySelectorAll("label")[2].textContent = t.sp_max;
-        document.getElementById("sp-min").placeholder = t.sp_min;
-        document.getElementById("sp-max").placeholder = t.sp_max;
+        document.getElementById("sp-min").placeholder =
+          lang === "ko" ? "예: 1" : "Ex: 1";
+        document.getElementById("sp-max").placeholder =
+          lang === "ko" ? "예: 8" : "Ex: 8";
         spUI.addText.textContent = t.sp_add_text;
         spUI.addRange.textContent = t.sp_add_range;
         spUI.clear.textContent = t.sp_clear;
