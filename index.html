@@ -227,6 +227,15 @@
 
       <!-- ===== SIDEBAR ===== -->
       <aside class="sidebar">
+        <!-- 언어 선택 추가 -->
+        <div class="section">
+          <label for="lang-select">언어(Language)</label>
+          <select id="lang-select">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+
         <h2 class="title">자리 배치 도구</h2>
         <p class="muted">2열 × 4행 × 3군단 / 군단 간 간격 적용</p>
 
@@ -378,6 +387,87 @@
       };
 
       const modeIndicator = document.getElementById("mode-indicator");
+
+      const UI_TEXT = {
+  ko: {
+    title: "자리 배치 도구",
+    tip: '팁: 자리를 클릭하면 <b>제외</b> / 다시 클릭하면 복원됩니다. “특수 자리 선택” 모드에서 자리를 클릭하면 특수 자리로 지정됩니다.',
+    board: "칠판 (앞)",
+    mode_normal: "일반 선택",
+    mode_special: "특수 자리 선택",
+    clear_special: "특수 선택 해제",
+    mode_exclude: "자리 제외",
+    clear_excluded: "모든 제외 해제",
+    mode_indicator: "현재 모드: 일반",
+    pool_label: "이름/번호 (줄바꿈으로 추가)",
+    pool_placeholder: "예시\n영희\n철수\n민수\n",
+    pool_min: "최소 항목",
+    pool_max: "최대 항목",
+    pool_add_text: "목록 추가",
+    pool_add_range: "범위 추가",
+    pool_clear: "목록 초기화",
+    pool_all: "전체 선택",
+    pool_none: "전체 해제",
+    pool_invert: "선택 반전",
+    sp_label: "이름/번호 (줄바꿈으로 추가)",
+    sp_placeholder: "예시\n영희\n철수\n민수\n",
+    sp_min: "최소 항목",
+    sp_max: "최대 항목",
+    sp_add_text: "목록 추가",
+    sp_add_range: "범위 추가",
+    sp_clear: "목록 초기화",
+    sp_all: "전체 선택",
+    sp_none: "전체 해제",
+    sp_invert: "선택 반전",
+    run: "랜덤 배치",
+    reset_seats: "자리 내용 지우기",
+    section_title: "자리 배치 도구",
+    section_desc: "2열 × 4행 × 3군단 / 군단 간 간격 적용",
+    pool_strong: "이름/번호 목록 또는 번호 범위",
+    pool_muted: "아래 입력칸은 <b>줄바꿈으로 목록 입력</b> 또는 <b>범위(최소/최대)</b> 추가가 동일하게 동작합니다.",
+    sp_strong: "특수 자리 이름/번호 목록 또는 번호 범위",
+    sp_muted: "위와 동일한 방식으로 입력/선택합니다. <b>특수로 선택된 자리</b>에만 먼저 배치됩니다.",
+  },
+  en: {
+    title: "Seat Arrangement Tool",
+    tip: 'Tip: Click a seat to <b>exclude</b> / click again to restore. In "Special Seat Selection" mode, clicking a seat marks it as special.',
+    board: "Board (Front)",
+    mode_normal: "Normal Select",
+    mode_special: "Special Seat Select",
+    clear_special: "Clear Special Selection",
+    mode_exclude: "Exclude Seat",
+    clear_excluded: "Clear All Excluded",
+    mode_indicator: "Current Mode: Normal",
+    pool_label: "Name/Number (add by line break)",
+    pool_placeholder: "Example\nYounghee\nChulsoo\nMinsu\n",
+    pool_min: "Min Item",
+    pool_max: "Max Item",
+    pool_add_text: "Add List",
+    pool_add_range: "Add Range",
+    pool_clear: "Clear List",
+    pool_all: "Select All",
+    pool_none: "Deselect All",
+    pool_invert: "Invert Selection",
+    sp_label: "Name/Number (add by line break)",
+    sp_placeholder: "Example\nYounghee\nChulsoo\nMinsu\n",
+    sp_min: "Min Item",
+    sp_max: "Max Item",
+    sp_add_text: "Add List",
+    sp_add_range: "Add Range",
+    sp_clear: "Clear List",
+    sp_all: "Select All",
+    sp_none: "Deselect All",
+    sp_invert: "Invert Selection",
+    run: "Random Assign",
+    reset_seats: "Clear Seat Contents",
+    section_title: "Seat Arrangement Tool",
+    section_desc: "2 columns × 4 rows × 3 battalions / battalion gap applied",
+    pool_strong: "Name/Number List or Number Range",
+    pool_muted: "Enter <b>list by line break</b> or <b>range (min/max)</b> below. Both work the same.",
+    sp_strong: "Special Seat Name/Number List or Number Range",
+    sp_muted: "Same input/selection as above. <b>Specially selected seats</b> are assigned first.",
+  },
+};
 
       /* =========================
        자리 생성 (2×4) × 3군단
@@ -723,6 +813,76 @@
       buildSeats();
       renderList(poolUI.list, poolItems, poolSelected);
       renderList(spUI.list, spItems, spSelected);
+
+      function setLanguage(lang) {
+  const t = UI_TEXT[lang];
+
+  // 사이드바 타이틀 및 설명
+  document.querySelector(".title").textContent = t.section_title;
+  document.querySelectorAll(".sidebar .muted")[0].innerHTML = t.section_desc;
+
+  // 메인 안내문구(팁)
+  document.querySelector(".stage .muted").innerHTML = t.tip;
+
+  // 칠판 텍스트
+  document.querySelector(".board").textContent = t.board;
+
+  // 모드 인디케이터
+  modeIndicator.textContent = t.mode_indicator;
+
+  // 모드 버튼
+  document.getElementById("mode-normal").textContent = t.mode_normal;
+  document.getElementById("mode-special").textContent = t.mode_special;
+  document.getElementById("clear-special").textContent = t.clear_special;
+  document.getElementById("mode-exclude").textContent = t.mode_exclude;
+  document.getElementById("clear-excluded").textContent = t.clear_excluded;
+
+  // 일반 후보
+  const poolSection = document.querySelectorAll(".section")[2];
+  poolSection.querySelector("strong").textContent = t.pool_strong;
+  poolSection.querySelector("p.muted").innerHTML = t.pool_muted;
+  poolSection.querySelectorAll("label")[0].textContent = t.pool_label;
+  poolUI.text.placeholder = t.pool_placeholder;
+  poolSection.querySelectorAll("label")[1].textContent = t.pool_min;
+  poolSection.querySelectorAll("label")[2].textContent = t.pool_max;
+  document.getElementById("pool-min").placeholder = t.pool_min;
+  document.getElementById("pool-max").placeholder = t.pool_max;
+  poolUI.addText.textContent = t.pool_add_text;
+  poolUI.addRange.textContent = t.pool_add_range;
+  poolUI.clear.textContent = t.pool_clear;
+  poolUI.all.textContent = t.pool_all;
+  poolUI.none.textContent = t.pool_none;
+  poolUI.invert.textContent = t.pool_invert;
+
+  // 특수 후보
+  const spSection = document.querySelectorAll(".section")[3];
+  spSection.querySelector("strong").textContent = t.sp_strong;
+  spSection.querySelector("p.muted").innerHTML = t.sp_muted;
+  spSection.querySelectorAll("label")[0].textContent = t.sp_label;
+  spUI.text.placeholder = t.sp_placeholder;
+  spSection.querySelectorAll("label")[1].textContent = t.sp_min;
+  spSection.querySelectorAll("label")[2].textContent = t.sp_max;
+  document.getElementById("sp-min").placeholder = t.sp_min;
+  document.getElementById("sp-max").placeholder = t.sp_max;
+  spUI.addText.textContent = t.sp_add_text;
+  spUI.addRange.textContent = t.sp_add_range;
+  spUI.clear.textContent = t.sp_clear;
+  spUI.all.textContent = t.sp_all;
+  spUI.none.textContent = t.sp_none;
+  spUI.invert.textContent = t.sp_invert;
+
+  // 실행 버튼
+  document.getElementById("run").textContent = t.run;
+  document.getElementById("reset-seats").textContent = t.reset_seats;
+
+  // 언어 선택 라벨
+  document.querySelector('label[for="lang-select"]').textContent = lang === "ko" ? "언어(Language)" : "Language";
+}
+
+      document.getElementById("lang-select").onchange = function () {
+  setLanguage(this.value);
+};
+setLanguage("ko"); // 초기값: 한국어
     </script>
   </body>
 </html>
